@@ -61,6 +61,7 @@ def display_thresholding_difference():
     display_matches()
     cv.imwrite("/home/gjsdt/Git_Repositories/compvi-364/2019/tut4/fountain_filtered_matches.jpg", img)
 
+    
 def gen_ransac_fundamental_matrix():
     matches = numpy.loadtxt("matches.txt")
     
@@ -78,7 +79,8 @@ def ransac(data,model,n,k,t,d,debug=False,return_all=False):
         test_points = data[test_idxs]
         maybemodel = model.fit(maybeinliers)
         test_err = model.get_error( test_points, maybemodel)
-        also_idxs = test_idxs[test_err < t] # select indices of rows with accepted points
+        # select indices of rows with accepted points
+        also_idxs = test_idxs[test_err < t]
         alsoinliers = data[also_idxs,:]
         if debug:
             print 'test_err.min()',test_err.min()
@@ -115,10 +117,44 @@ def random_partition(n,n_data):
 class FundamentalMatrixModel:
     
     def fit(data):
-        return
+        A = numpy.zeros(shape=(data.shape[0],9));
+        #construct matrix A -----------------------
+        for i in range(data.shape[0]):
+            x_a = data[0];
+            y_a = data[1];
+            x_b = data[2];
+            y_b = data[3];
+            
+            A[i,0] = x_a * x_b;
+            A[i,1] = y_a * x_b;
+            A[i,2] = x_b;
+            A[i,3] = x_a * y_b;
+            A[i,4] = y_a * y_b;
+            A[i,5] = y_b;
+            A[i,6] = x_a;
+            A[i,7] = y_a;
+            A[i,8] = 1;
+        #construct matrix A ------------------------
+        u_A, s_A, vh_A = numpy.linalg.svd(A, full_matrices=True);
+        v_A = vh_A.T;
+        f = v_A[:,-1]
+        F_cap = [[f[0],f[1],f[2]],[f[3],f[4],f[5]],[f[6],f[7],f[8]]];
+        u_F_cap, s_F_cap, vh_F_cap = numpy.linalg.svd(A, full_matrices=True);
+        #force matrix to be of rank 2
+        s_F_cap[2] = 0;
+        s_mat = numpy.diag(s_F_cap);
+        #reconstruct F
+        F = numpy.dot(u_F_cap, numpy.dot(smat, vh_F_cap));
+        return F;
         
     def get_error(data, model):
-        return
+        n_data_points = data.shape[0];
+        error_list = numpy.zeros(shape=(n_data_points,1));
+        for i in range(n_data_points):
+            x_a_vector = numpy.asarray([data[i,0], data[i,1], 1]);
+            x_b_vector = numpy.asarray([data[i,2], data[i,3], 1]);
+            
+        return error_list
 
 class LinearLeastSquaresModel:
     """linear system solved using linear least squares
@@ -243,7 +279,7 @@ def gen_2Ddata():
     
     
 if __name__=='__main__':
-    data = numpy.loadtxt("matches.txt")
+    '''data = numpy.loadtxt("matches.txt")
     n = 8;
     print(data.shape[0]);
     maybe_idxs, test_idxs = random_partition(n,data.shape[0])
@@ -254,7 +290,7 @@ if __name__=='__main__':
     print(maybeinliers);
     print("test points\n\n\n")
     test_points = data[test_idxs]
-    print(test_points);
+    print(test_points);'''
     
     '''
     n = 8;
@@ -269,3 +305,4 @@ if __name__=='__main__':
     print("test points\n\n\n")
     test_points = data[test_idxs]
     print(test_points);'''
+    test();
